@@ -13,25 +13,33 @@ namespace MidiParser
         static void Main(string[] args)
         {
             //Iterate through all files dropped onto the program
-            switch (args.Length)
+            try
             {
-                case 1:
-                    ConvertFile(args[0]);
-                    break;
-                case 0:
-                    while (true)
-                    {
-                        Console.WriteLine("Paste file path to convert here (Enter a blank line to quit):");
-                        string s = Console.ReadLine();
-                        if (!s.Equals(""))
-                            ConvertFile(s);
-                        else
-                            break;
-                    }
-                    break;
-                default:
-                    ConvertAllFiles(args);
-                    break;
+                switch (args.Length)
+                {
+                    case 1:
+                        ConvertFile(args[0]);
+                        break;
+                    case 0:
+                        while (true)
+                        {
+                            Console.WriteLine("Paste file path to convert here (Enter a blank line to quit):");
+                            string s = Console.ReadLine();
+                            if (s != "")
+                                ConvertFile(s);
+                            else
+                                break;
+                        }
+                        break;
+                    default:
+                        ConvertAllFiles(args);
+                        break;
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Exception was thrown:\n{e.Message}\n\nPress enter to quit.");
+                Console.ReadLine();
             }
         }
 
