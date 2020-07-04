@@ -4,12 +4,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Windows.Forms;
 using System.Threading;
 
 namespace MidiParser
 {
     class Program
     {
+        [STAThread]
         static void Main(string[] args)
         {
             //Iterate through all files dropped onto the program
@@ -155,6 +157,8 @@ namespace MidiParser
                     //Write to a text file
                     File.WriteAllText(output, info.ToString());
 
+
+                    Clipboard.SetText(info.ToString());
                     return info.ToString();
                 }
                 catch (Exception e)
