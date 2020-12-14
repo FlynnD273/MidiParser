@@ -19,8 +19,8 @@ namespace MidiParser
         public Note (int note, double timeStart, double length, int velocity)
         {
             NotePitch = note;
-            TimeStart = timeStart;
-            Length = length;
+            TimeStart = Math.Round(timeStart, 4);
+            Length = Math.Round(length, 4);
             Velocity = velocity;
         }
 
