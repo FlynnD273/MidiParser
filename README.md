@@ -8,3 +8,5 @@ There's a green button in the upper left area of the page. Click on that, then c
 A text file will appear, and you want to open the text file and copy everything in that text file. In Scratch, create a new item in the list, and paste the text you copied into the item. And there you go! You should be able to run the program, and your song will appear. Don't forget to remix the project, so I can see too!
 
 If you drag multiple files onto the exe file, you'll get a file called \_\_AllSongs.txt You can import this file into the \_\_songs list in the Scratch program to add all the songs you converted.
+
+You may need to install DotNet Core Runtime: https://dotnet.microsoft.com/download/dotnet-core/thank-you/runtime-desktop-3.1.10-windows-x64-installer
