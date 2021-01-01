@@ -1,5 +1,5 @@
 # MidiParser
-A program to convert MIDI files into a text file to copy into this Scratch project: https://scratch.mit.edu/projects/406047907/
+A program to convert MIDI files into a text file to copy into this Scratch project: https://scratch.mit.edu/projects/406337184/
 
 ## How to use
 The compiled executable can be found [here](../master/MidiParser/bin/Debug/netcoreapp3.1):
