@@ -86,10 +86,17 @@ namespace MidiParser
 
                     foreach (MidiEvent m in midiEvents[0])
                     {
-                        if (m is TempoEvent)
+                        try
                         {
-                            if (tempoEvents.Last().MicrosecondsPerQuarterNote != ((TempoEvent)m).MicrosecondsPerQuarterNote)
-                                tempoEvents.Add(m as TempoEvent);
+                            if (m is TempoEvent)
+                            {
+                                if (tempoEvents.Last().MicrosecondsPerQuarterNote != ((TempoEvent)m).MicrosecondsPerQuarterNote)
+                                    tempoEvents.Add(m as TempoEvent);
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine($"Error reading tempos:\n{e.Message}");
                         }
                     }
 
@@ -106,30 +113,37 @@ namespace MidiParser
 
                         foreach (MidiEvent midiEvent in midiEvents[i])
                         {
-                            if (currentTempoIndex < tempoEvents.Count - 1)
+                            try
                             {
-                                while (tempoEvents[currentTempoIndex + 1].AbsoluteTime < midiEvent.AbsoluteTime)
+                                if (currentTempoIndex < tempoEvents.Count - 1)
                                 {
-                                    if (currentTempoIndex < tempoEvents.Count - 1)
-                                        break;
+                                    while (tempoEvents[currentTempoIndex + 1].AbsoluteTime < midiEvent.AbsoluteTime)
+                                    {
+                                        if (currentTempoIndex < tempoEvents.Count - 1)
+                                            break;
 
-                                    currentTempoIndex++;
+                                        currentTempoIndex++;
+                                    }
+                                }
+
+                                //Only if a note press
+                                if (midiEvent.CommandCode == MidiCommandCode.NoteOn)
+                                {
+                                    NoteOnEvent note = midiEvent as NoteOnEvent;
+
+                                    //If not an off note
+                                    if (note.Velocity != 0)
+                                    {
+                                        double timeInSeconds = Note.ToSeconds(note.AbsoluteTime, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
+                                        double lengthInSeconds = Note.ToSeconds(note.NoteLength, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
+                                        //Add this note
+                                        notes.Add(new Note(note.NoteNumber, timeInSeconds, lengthInSeconds, note.Velocity));
+                                    }
                                 }
                             }
-
-                            //Only if a note press
-                            if (midiEvent.CommandCode == MidiCommandCode.NoteOn)
+                            catch (Exception e)
                             {
-                                NoteOnEvent note = midiEvent as NoteOnEvent;
-
-                                //If not an off note
-                                if (note.Velocity != 0)
-                                {
-                                    double timeInSeconds = Note.ToSeconds(note.AbsoluteTime, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
-                                    double lengthInSeconds = Note.ToSeconds(note.NoteLength, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
-                                    //Add this note
-                                    notes.Add(new Note(note.NoteNumber, timeInSeconds, lengthInSeconds, note.Velocity));
-                                }
+                                Console.WriteLine($"Error reading note:\n{e.Message}");
                             }
                         }
                     }
@@ -172,7 +186,7 @@ namespace MidiParser
                 Console.WriteLine($"File {file} does not exist.\nPress enter to continue");
                 Console.ReadLine();
             }
-            return null;
+            return "";
         }
     }
 }
