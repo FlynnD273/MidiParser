@@ -1,5 +1,6 @@
 # MidiParser - Modded
 A program to convert MIDI files into a text file to copy originally into this Scratch project: https://scratch.mit.edu/projects/406337184/
+
 This modded variant is intended for usage for this Scratch project: https://scratch.mit.edu/projects/633610677/
 
 ## About Mod
@@ -19,4 +20,5 @@ You may need to install DotNet Core Runtime: https://dotnet.microsoft.com/downlo
 
 ## Credits
 FlynnD273 for the original code
+
 Eden for the tempo events implementation
