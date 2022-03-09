@@ -71,6 +71,7 @@ namespace MidiParser
                 {
                     mid = new MidiFile(path);
                     int ticksPerQuarterNote = mid.DeltaTicksPerQuarterNote;
+                    int exportTPQN = 1; //Currently has no definite usage, can use MIDI PPQ as long as the numbers are small
 
                     List<TempoEvent> tempoEvents = new List<TempoEvent>();
                     tempoEvents.Add(new TempoEvent(500000, 0));
@@ -91,7 +92,7 @@ namespace MidiParser
                             if (m is TempoEvent)
                             {
                                 if (tempoEvents.Last().MicrosecondsPerQuarterNote != ((TempoEvent)m).MicrosecondsPerQuarterNote)
-                                    tempoEvents.Add(m as TempoEvent);
+                                    tempoEvents.Add(m as TempoEvent);   
                             }
                         }
                         catch (Exception e)
@@ -103,11 +104,11 @@ namespace MidiParser
                     //Iterate through every note press in the file
                     for (int i = 0; i < midiEvents.Length; i++)
                     {
-                        //Skip drums
-                        if (i == 9)
-                        {
-                            continue;
-                        }
+                        //Skip drums - This should be skipping channels, not tracks
+                        //if (i == 9)
+                        //{
+                        //    continue;
+                        //}
 
                         int currentTempoIndex = 0;
 
@@ -121,7 +122,6 @@ namespace MidiParser
                                     {
                                         if (currentTempoIndex < tempoEvents.Count - 1)
                                             break;
-
                                         currentTempoIndex++;
                                     }
                                 }
@@ -134,11 +134,26 @@ namespace MidiParser
                                     //If not an off note
                                     if (note.Velocity != 0)
                                     {
+                                        int modTrack = i % 16;
+                                        int noteVel = note.Velocity;
+                                        //This code is made to simply add color to Eden's MIDI Player without implementing a track data variable.
+                                        if (noteVel < 16){
+                                            noteVel += modTrack;
+                                        }
                                         double timeInSeconds = Note.ToSeconds(note.AbsoluteTime, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
                                         double lengthInSeconds = Note.ToSeconds(note.NoteLength, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
                                         //Add this note
-                                        notes.Add(new Note(note.NoteNumber, timeInSeconds, lengthInSeconds, note.Velocity));
+                                        notes.Add(new Note(note.NoteNumber, timeInSeconds, lengthInSeconds, noteVel, exportTPQN));
                                     }
+                                }
+                                //If there is a tempo event
+                                if (midiEvent is TempoEvent){
+                                    TempoEvent tempo = midiEvent as TempoEvent;
+                                    double timeInSeconds = Note.ToSeconds(tempo.AbsoluteTime, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
+                                    double lengthInSeconds = Note.ToSeconds(0, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
+                                    //Add tempo event, since the MIDI standard allows 0 to 127 pitch values, 128 to 255 can be used as control macros.
+                                    //Tempo event is "note" 128, all tempo events have length of 0 but channel value of the tempo. Still can be optimised
+                                    notes.Add(new Note(128, timeInSeconds, lengthInSeconds, Convert.ToInt32(60000000/tempo.Tempo), exportTPQN));
                                 }
                             }
                             catch (Exception e)

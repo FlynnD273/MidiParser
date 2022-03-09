@@ -16,11 +16,11 @@ namespace MidiParser
         private int _velocity;
         public int Velocity { get => _velocity; private set => _velocity = value; }
 
-        public Note (int note, double timeStart, double length, int velocity)
+        public Note (int note, double timeStart, double length, int velocity, int tpqn)
         {
             NotePitch = note;
-            TimeStart = Math.Round(timeStart, 4);
-            Length = Math.Round(length, 4);
+            TimeStart = Math.Round(timeStart*tpqn, 4);
+            Length = Math.Round(length*tpqn, 4);
             Velocity = velocity;
         }
 
