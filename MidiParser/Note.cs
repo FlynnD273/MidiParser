@@ -19,8 +19,16 @@ namespace MidiParser
         public Note (int note, double timeStart, double length, int velocity, int tpqn)
         {
             NotePitch = note;
-            TimeStart = Math.Round(timeStart*tpqn, 4);
-            Length = Math.Round(length*tpqn, 4);
+            if (tpqn > 1)
+            {
+                TimeStart = Math.Round(timeStart*tpqn, 0);
+                Length = Math.Round(length*tpqn, 0);
+            }
+            else
+            {
+                TimeStart = Math.Round(timeStart*tpqn, 4);
+                Length = Math.Round(length*tpqn, 4);
+            }
             Velocity = velocity;
         }
 

@@ -14,13 +14,26 @@ namespace MidiParser
         [STAThread]
         static void Main(string[] args)
         {
+        
+            //Credits
+            Console.WriteLine("MIDIParser by K9ShyGuy - Modified by Eden/Danify/OjasnGamer101\nRevision 4 - 04 August 2022\n\nType the number corresponding to an Import Option then press Enter to initialize conversion.\n\n\t[1] - K9ShyGuy's MIDI Player\n\t[2] - Danify's Scratch PFA\n\t[3] - Optimized Scratch PFA Code [BETA]\n\n");
+            double importMode = Convert.ToDouble(Console.ReadLine());
+            if (importMode % 1 !=0 || Math.Ceiling(importMode/3) != 1)
+            {
+                Console.WriteLine($"\nInvalid input.\n\nPress enter to quit.");
+                Console.ReadLine();
+                return;
+            }
+                
+            
+    
             //Iterate through all files dropped onto the program
             try
             {
                 switch (args.Length)
                 {
                     case 1:
-                        ConvertFile(args[0]);
+                        ConvertFile(args[0],importMode);
                         break;
                     case 0:
                         while (true)
@@ -28,13 +41,13 @@ namespace MidiParser
                             Console.WriteLine("Paste file path to convert here (Enter a blank line to quit):");
                             string s = Console.ReadLine();
                             if (s != "")
-                                ConvertFile(s);
+                                ConvertFile(s,importMode);
                             else
                                 break;
                         }
                         break;
                     default:
-                        ConvertAllFiles(args);
+                        ConvertAllFiles(args,importMode);
                         break;
                 }
             }
@@ -45,25 +58,33 @@ namespace MidiParser
             }
         }
 
-        private static void ConvertAllFiles (string[] files)
+        private static void ConvertAllFiles (string[] files, double importMode)
         {
             StringBuilder sb = new StringBuilder();
             foreach (string file in files)
             {
-                sb.AppendLine(ConvertFile(file));
+                sb.AppendLine(ConvertFile(file,importMode));
             }
             sb.Remove(sb.Length - 1, 1);
 
             File.WriteAllText(Path.Combine(Path.GetDirectoryName(files[0]), "__AllSongs.txt"), sb.ToString());
         }
 
-        private static string ConvertFile (string file)
+        private static string ConvertFile (string file, double importMode) 
         {
             //Make sure the file exists
             if (File.Exists(file))
             {
                 string path = file;
-                string output = Path.Combine(Path.GetDirectoryName(path), "_" + Path.GetFileNameWithoutExtension(path) + " - Converted.txt");
+                string output;
+                if (importMode == 3)
+                {
+                    output = Path.Combine(Path.GetDirectoryName(path), "_" + Path.GetFileNameWithoutExtension(path) + " - Converted.spfa");
+                }
+                else
+                {
+                    output = Path.Combine(Path.GetDirectoryName(path), "_" + Path.GetFileNameWithoutExtension(path) + " - Converted.txt");
+                }
                 MidiFile mid;
 
                 //If an error is thrown, notify user and continue looping
@@ -71,7 +92,11 @@ namespace MidiParser
                 {
                     mid = new MidiFile(path);
                     int ticksPerQuarterNote = mid.DeltaTicksPerQuarterNote;
-                    int exportTPQN = 1; //Currently has no definite usage, can use MIDI PPQ as long as the numbers are small
+                    int exportTPQN = 1;
+                    if (importMode == 3)
+                    {
+                        exportTPQN *= 384;
+                    }
 
                     List<TempoEvent> tempoEvents = new List<TempoEvent>();
                     tempoEvents.Add(new TempoEvent(500000, 0));
@@ -109,8 +134,14 @@ namespace MidiParser
                         //{
                         //    continue;
                         //}
-
+                        
+                        //Track Header - Separates notes into its own separate tracks
+                        if (importMode >= 2)
+                        {
+                            notes.Add(new Note(i, -1, 0, 0, exportTPQN));
+                        }
                         int currentTempoIndex = 0;
+                        
 
                         foreach (MidiEvent midiEvent in midiEvents[i])
                         {
@@ -136,10 +167,11 @@ namespace MidiParser
                                     {
                                         int modTrack = i % 16;
                                         int noteVel = note.Velocity;
-                                        //This code is made to simply add color to Eden's MIDI Player without implementing a track data variable.
+                                        /*This code is made to simply add color to Eden's MIDI Player without implementing a track data variable.
                                         if (noteVel < 16){
-                                            noteVel += modTrack;
+                                            noteVel += modTrack; - No longer needed with track visualization
                                         }
+                                        */
                                         double timeInSeconds = Note.ToSeconds(note.AbsoluteTime, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
                                         double lengthInSeconds = Note.ToSeconds(note.NoteLength, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
                                         //Add this note
@@ -163,14 +195,23 @@ namespace MidiParser
                         }
                     }
 
-                    //Sort by time in ascending order
-                    Note[] sortedNotes = notes.OrderBy(o => o.TimeStart).ToArray();
-
+                    //Sort by time in ascending order - Not needed for track header separation (MK9S 4+)
+                    //WARNING: Disabling sortedNotes will render this program unusable to the original MIDI Player of K9ShyGuy
+                    Note[] sortedNotes;
+                    if (importMode == 1)
+                    {
+                        sortedNotes = notes.OrderBy(o => o.TimeStart).ToArray();
+                    } 
+                    else 
+                    {
+                        sortedNotes = notes.ToArray();
+                    }
+                    
                     char separateChar = '\\';
                     //String to write to the text file
                     //Start with the file name without commas as the song title
-                    StringBuilder info = new StringBuilder($"{Path.GetFileNameWithoutExtension(path).Replace(separateChar.ToString(), "")}{separateChar}1{separateChar}");
-
+                    StringBuilder info = new StringBuilder($"{Path.GetFileNameWithoutExtension(path).Replace(separateChar.ToString(), "")}{separateChar}{importMode}{separateChar}");
+                    
                     foreach (Note n in sortedNotes)
                     {
                         //Every 4 items contains all the info for a note
