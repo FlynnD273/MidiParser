@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 //using System.Windows.Forms;
-using System.Threading;
+//using System.Threading;
 
 namespace MidiParser
 {
@@ -16,16 +16,18 @@ namespace MidiParser
         {
         
             //Credits
-            Console.WriteLine("MIDIParser by K9ShyGuy - Modified by Eden/Danify/OjasnGamer101\nRevision 4 - 04 August 2022\n\nType the number corresponding to an Import Option then press Enter to initialize conversion.\n\n\t[1] - K9ShyGuy's MIDI Player\n\t[2] - Danify's Scratch PFA\n\t[3] - Optimized Scratch PFA Code [BETA]\n\n");
+            Console.WriteLine("MIDIParser by K9ShyGuy - Modified by Eden/Danify/OjasnGamer101\nRevision 5 - 27 August 2022\n\nType the number corresponding to an Import Option then press Enter to initialize conversion.\n\n\t[1] - K9ShyGuy's MIDI Player\n\t[2] - Danify's Scratch PFA\n\n");
             double importMode = Convert.ToDouble(Console.ReadLine());
-            if (importMode % 1 !=0 || Math.Ceiling(importMode/3) != 1)
+            if (importMode % 1 !=0 || Math.Ceiling(importMode/2) != 1)
             {
                 Console.WriteLine($"\nInvalid input.\n\nPress enter to quit.");
                 Console.ReadLine();
                 return;
             }
                 
-            
+            importMode -= 1;
+            importMode *= 2;
+            importMode += 1;
     
             //Iterate through all files dropped onto the program
             try
@@ -93,6 +95,7 @@ namespace MidiParser
                     mid = new MidiFile(path);
                     int ticksPerQuarterNote = mid.DeltaTicksPerQuarterNote;
                     int exportTPQN = 1;
+                    int channelGet = 0;
                     if (importMode == 3)
                     {
                         exportTPQN *= 384;
@@ -126,6 +129,8 @@ namespace MidiParser
                         }
                     }
 
+                    
+
                     //Iterate through every note press in the file
                     for (int i = 0; i < midiEvents.Length; i++)
                     {
@@ -141,7 +146,7 @@ namespace MidiParser
                             notes.Add(new Note(i, -1, 0, 0, exportTPQN));
                         }
                         int currentTempoIndex = 0;
-                        
+                        channelGet = 1;
 
                         foreach (MidiEvent midiEvent in midiEvents[i])
                         {
@@ -157,6 +162,16 @@ namespace MidiParser
                                     }
                                 }
 
+                                //If Control Change - WIP
+                                /*
+                                if (midiEvent.CommandCode == MidiCommandCode.ControlChange)
+                                {
+                                    ControlChangeEvent midiccv = midiEvent as ControlChangeEvent;
+                                    double volexp = 127;
+                                }
+                                */
+                                
+
                                 //Only if a note press
                                 if (midiEvent.CommandCode == MidiCommandCode.NoteOn)
                                 {
@@ -165,13 +180,15 @@ namespace MidiParser
                                     //If not an off note
                                     if (note.Velocity != 0)
                                     {
-                                        int modTrack = i % 16;
+                                        
                                         int noteVel = note.Velocity;
-                                        /*This code is made to simply add color to Eden's MIDI Player without implementing a track data variable.
-                                        if (noteVel < 16){
-                                            noteVel += modTrack; - No longer needed with track visualization
+                                        
+                                        //Gets the channel data 
+                                        if (channelGet == 1)
+                                        {
+                                            notes.Add(new Note(note.Channel, -1, 1, 0, exportTPQN));
+                                            channelGet = 0;
                                         }
-                                        */
                                         double timeInSeconds = Note.ToSeconds(note.AbsoluteTime, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
                                         double lengthInSeconds = Note.ToSeconds(note.NoteLength, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
                                         //Add this note
