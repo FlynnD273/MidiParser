@@ -162,14 +162,15 @@ namespace MidiParser
                                     }
                                 }
 
-                                //If Control Change - WIP
+                                //If Control Change - WIP (Not yet implemented)
                                 /*
                                 if (midiEvent.CommandCode == MidiCommandCode.ControlChange)
                                 {
-                                    ControlChangeEvent midiccv = midiEvent as ControlChangeEvent;
+                                    ControlChangeEvent midicc = midiEvent as ControlChangeEvent;
                                     double volexp = 127;
                                 }
                                 */
+                                
                                 
 
                                 //Only if a note press
