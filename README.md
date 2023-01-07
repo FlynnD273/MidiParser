@@ -1,7 +1,9 @@
 # MidiParser - Modded
 A program to convert MIDI files into a text file to copy originally into this Scratch project: https://scratch.mit.edu/projects/406337184/
 
-This modded variant is intended for usage for this Scratch project: https://scratch.mit.edu/projects/633610677/
+This modded variant is intended for usage for the following Scratch projects: 
+1. Texture-Based PFA (SLOWER) https://scratch.mit.edu/projects/633610677/
+2. Pen-Based (New Eden MIDI Renderer, FASTER, Latest) https://scratch.mit.edu/projects/722655492/
 
 ## About Mod
 This program has been modded to allow tempo events to be included in the text file. This will make the code incompatible with the Scratch project listed above. This is intended for ScratchPFA, another Scratch Project which uses the same text file.
