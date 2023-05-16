@@ -13,10 +13,10 @@ namespace MidiParser
         public double TimeStart { get => _timeStart; private set => _timeStart = value; }
         private double _length;
         public double Length { get => _length; private set => _length = value; }
-        private int _velocity;
-        public int Velocity { get => _velocity; private set => _velocity = value; }
+        private double _velocity;
+        public double Velocity { get => _velocity; private set => _velocity = value; }
 
-        public Note (int note, double timeStart, double length, int velocity, int tpqn)
+        public Note (int note, double timeStart, double length, double velocity, int tpqn)
         {
             NotePitch = note;
             if (tpqn > 1)
@@ -29,7 +29,7 @@ namespace MidiParser
                 TimeStart = Math.Round(timeStart*tpqn, 4);
                 Length = Math.Round(length*tpqn, 4);
             }
-            Velocity = velocity;
+            Velocity = Math.Round(velocity,0);
         }
 
         public static double ToSeconds (long time, TempoEvent lastTempoEvent, int ticksPerQuarterNote)

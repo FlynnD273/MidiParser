@@ -2,8 +2,8 @@
 A program to convert MIDI files into a text file to copy originally into this Scratch project: https://scratch.mit.edu/projects/406337184/
 
 This modded variant is intended for usage for the following Scratch projects: 
-1. Texture-Based PFA (SLOWER) https://scratch.mit.edu/projects/633610677/
-2. Pen-Based (New Eden MIDI Renderer, FASTER, Latest) https://scratch.mit.edu/projects/722655492/
+1. Pen-Based (New Eden MIDI Player, Slow, Outdated, but has more settings) https://scratch.mit.edu/projects/722655492/
+2. Pen-Based (KazuMIDI Player, Faster, Newest, but very basic in design) (Link coming soon!)
 
 ## About Mod
 This program has been modded to allow tempo events to be included in the text file. This will make the code incompatible with the Scratch project listed above. This is intended for ScratchPFA, another Scratch Project which uses the same text file.
@@ -16,11 +16,11 @@ A text file will appear, and you want to open the text file and copy everything 
 
 In Scratch, since this is a modded program, the original Scratch project wouldn't be able to read the contents of the text file properly. Instead, make sure you are in ScratchPFA since it accepts the modded code. Simply start the Scratch Project and choose the Import function. Then, simply paste everything from the text file into the text box and press enter.
 
-If you drag multiple files onto the exe file, you'll get a file called \_\_AllSongs.txt. However, Scratch PFA currently only accepts one song at a time. This multiple MIDI feature will be available soon, so stay tuned!
+If you drag multiple files onto the exe file, you'll get a file called \_\_AllSongs.txt. This feature only works for K9ShyGuy's project.
 
 You may need to install DotNet Core Runtime: https://dotnet.microsoft.com/download/dotnet-core/thank-you/runtime-desktop-3.1.10-windows-x64-installer
 
 ## Credits
 FlynnD273 for the original code
 
-Eden for the tempo events implementation
+Eden for the tempo events, MIDI channel, and Volume and Expresion Control Change implementation

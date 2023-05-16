@@ -129,7 +129,10 @@ namespace MidiParser
                         }
                     }
 
-                    
+                    //Create a list containing default Expression, Volume, and Sustain values. 18 Entries in case.
+                    int[] MIDIVol = new int[] {127,127,127,127,127,127,127,127,127,127,127,127,127,127,127,127,127,127};
+                    int[] MIDIExp = new int[] {127,127,127,127,127,127,127,127,127,127,127,127,127,127,127,127,127,127};
+                    int[] MIDISus = new int[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
                     //Iterate through every note press in the file
                     for (int i = 0; i < midiEvents.Length; i++)
@@ -141,6 +144,7 @@ namespace MidiParser
                         //}
                         
                         //Track Header - Separates notes into its own separate tracks
+                        
                         if (importMode >= 2)
                         {
                             notes.Add(new Note(i, -1, 0, 0, exportTPQN));
@@ -163,13 +167,31 @@ namespace MidiParser
                                 }
 
                                 //If Control Change - WIP (Not yet implemented)
-                                /*
+                                
                                 if (midiEvent.CommandCode == MidiCommandCode.ControlChange)
                                 {
                                     ControlChangeEvent midicc = midiEvent as ControlChangeEvent;
-                                    double volexp = 127;
+                                    //Console.WriteLine("Controller: "+ midicc.Controller + "\nValue: "+ midicc.ControllerValue);
+                                    string MIDICCRaw = midicc.Controller.ToString();
+                                    int MIDICCRawValue = Int16.Parse(midicc.ControllerValue.ToString());
+                                    int MIDICCChannel = Int16.Parse(midicc.Channel.ToString());
+                                    if (MIDICCRaw == "MainVolume"){
+                                        Console.WriteLine("Channel:" + (MIDICCChannel).ToString() + "\nValue of Volume:" + (MIDICCRawValue).ToString());
+                                        MIDIVol[MIDICCChannel] = MIDICCRawValue;
+                                        Console.WriteLine("MIDIVol[MIDICCChannel]: " + MIDIVol[MIDICCChannel]);
+                                    }
+                                    if (MIDICCRaw == "Expression"){
+                                        Console.WriteLine("Channel:" + (MIDICCChannel).ToString() + "\nValue of Expression:" + (MIDICCRawValue).ToString());
+                                        MIDIExp[MIDICCChannel] = MIDICCRawValue;
+                                        Console.WriteLine("MIDIExp[MIDICCChannel]: " + MIDIExp[MIDICCChannel]);
+                                    }
+                                    
+                                    
+
+                                    //double volexp = 127;
+                                    
                                 }
-                                */
+                                
                                 
                                 
 
@@ -181,9 +203,15 @@ namespace MidiParser
                                     //If not an off note
                                     if (note.Velocity != 0)
                                     {
+                                        //Adjusts volumes based on MIDI CC.
+                                        double noteVelCC = (MIDIVol[note.Channel]) * (MIDIExp[note.Channel]);
+                                        //Console.WriteLine("MIDIVol[note.Channel-1]: " + (MIDIVol[note.Channel-1]).ToString());
+                                        //Console.WriteLine("MIDIExp[note.Channel-1]: " + (MIDIExp[note.Channel-1]).ToString());
+                                        double noteVel = note.Velocity * noteVelCC/16129;
+                                        //Console.WriteLine("Note Channel: " + note.Channel.ToString() + "\nNote Velocity: " + noteVel);
+
                                         
-                                        int noteVel = note.Velocity;
-                                        
+
                                         //Gets the channel data 
                                         if (channelGet == 1)
                                         {
@@ -233,6 +261,7 @@ namespace MidiParser
                     foreach (Note n in sortedNotes)
                     {
                         //Every 4 items contains all the info for a note
+                        //Is it possible to split?
                         info.Append(n.TimeStart.ToString()).Append(separateChar);
                         info.Append(n.NotePitch.ToString()).Append(separateChar);
                         info.Append(n.Length.ToString()).Append(separateChar);
@@ -247,6 +276,10 @@ namespace MidiParser
 
                     //Console.WriteLine("\n\n****************\n\n" + info.ToString());
                     //Clipboard.SetText(info.ToString());
+                    
+                    //Below is debug only.
+                    Console.WriteLine("Finished process.\nIf this window does not close automatically, press enter to end.");
+                    //Console.ReadLine();
                     return info.ToString();
                 }
                 catch (Exception e)
