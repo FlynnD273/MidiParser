@@ -201,6 +201,23 @@ namespace MidiParser
                                     }
                                 }
 
+                                //If Program Change (Only for Aranara MIDI)
+                                if (importMode == 7)
+                                {
+                                    if (midiEvent.CommandCode == MidiCommandCode.PatchChange)
+                                    {
+                                        PatchChangeEvent midipc = midiEvent as PatchChangeEvent;
+                                        int MIDIPCRaw = ((short)midipc.Patch);
+                                        Console.WriteLine("MIDI Program Change: " + MIDIPCRaw.ToString());
+
+                                        //Instrument Time
+                                        double timeInSeconds = Note.ToSeconds(midipc.AbsoluteTime, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
+                                        double lengthInSeconds = Note.ToSeconds(0, tempoEvents[currentTempoIndex], ticksPerQuarterNote); //Not quite needed
+
+                                        aran.Add(new AranaraN("PC",MIDIPCRaw,0,midipc.Channel,timeInSeconds,0,exportTPQN));
+                                    }
+                                }
+
                                 //Only if a note press
                                 if (midiEvent.CommandCode == MidiCommandCode.NoteOn)
                                 {
@@ -327,9 +344,10 @@ namespace MidiParser
                     }
                     else
                     {
+                        //Aranara MIDI File Parser
                         AranaraN[] events = aran.ToArray();
 
-                        char separateChar = '|';
+                        char separateChar = '|'; //Only used for initialising file header.
                         StringBuilder info = new StringBuilder($"{Path.GetFileNameWithoutExtension(path).Replace(separateChar.ToString(), "")}{separateChar}");
 
                         foreach (AranaraN n in events)
@@ -350,8 +368,7 @@ namespace MidiParser
                         
                         //Below is debug only.
                         Console.WriteLine("Finished process.\nIf this window does not close automatically, press enter to end.");
-                        Console.WriteLine($"Value of exportTPQN: {exportTPQN}");
-                        Console.ReadLine();
+                        //Console.ReadLine();
                         return info.ToString();
                     }
                     

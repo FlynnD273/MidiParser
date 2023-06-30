@@ -45,6 +45,16 @@ namespace MidiParser
                     hex_len = "";
                     break;
 
+                case "PC": //Program Change
+                    hex_type = "D";
+                    hex_note = hnote.ToString("X2"); //Patch Value (Conveniently same range as note pitch)
+                    hex_vel = "";
+                    hex_ch =  hch.ToString("X");
+                    hex_value = "";
+                    hex_time = Convert.ToInt32(Math.Round(htime*htpqn,0)).ToString("X") + "|";
+                    hex_len = "";
+                    break;
+
                 default: //Assume Note
                     hex_type = "";
                     hex_note = hnote.ToString("X2"); 
