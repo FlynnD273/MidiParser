@@ -104,7 +104,11 @@ namespace MidiParser
                 {
                     mid = new MidiFile(path);
                     int ticksPerQuarterNote = mid.DeltaTicksPerQuarterNote;
-                    int exportTPQN = Convert.ToInt32(importMode==1) + Convert.ToInt32(importMode!=1) * 768;
+                    int exportTPQN = Convert.ToInt32(importMode==1) + Convert.ToInt32(importMode!=1) * 384;
+                    if (importMode == 7)
+                    {
+                        exportTPQN = 768;
+                    }
                     int channelGet = 0;
 
                     List<TempoEvent> tempoEvents = new List<TempoEvent>();
@@ -138,22 +142,15 @@ namespace MidiParser
                     }
 
                     //Create a list containing default Expression, Volume, and Sustain values. 18 Entries in case.
-                    /*
-                    int[] MIDIVol = new int[] {127,127,127,127,127,127,127,127,127,127,127,127,127,127,127,127,127,127};
-                    int[] MIDIExp = new int[] {127,127,127,127,127,127,127,127,127,127,127,127,127,127,127,127,127,127};
-                    int[] MIDISus = new int[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-                    */
-
                     int[] MIDIVol = Enumerable.Repeat(127, 18).ToArray();
                     int[] MIDIExp = Enumerable.Repeat(127, 18).ToArray();
-                    int[] MIDISus = Enumerable.Repeat(0, 18).ToArray();
+                    int[] MIDISus = Enumerable.Repeat(0, 18).ToArray(); //Unused
 
                     //Iterate through every note press in the file
                     for (int i = 0; i < midiEvents.Length; i++)
                     {
                         
                         //Track Header - Separates notes into its own separate tracks
-
                         if (importMode != 1)
                         {
                             if (importMode == 7)
@@ -184,12 +181,10 @@ namespace MidiParser
                                     }
                                 }
 
-                                //If Control Change - WIP (Not yet implemented)
-                                
+                                //If Control Change (Purpose is to change velocity depending on channel volume and expression)
                                 if (midiEvent.CommandCode == MidiCommandCode.ControlChange)
                                 {
                                     ControlChangeEvent midicc = midiEvent as ControlChangeEvent;
-                                    //Console.WriteLine("Controller: "+ midicc.Controller + "\nValue: "+ midicc.ControllerValue);
                                     string MIDICCRaw = midicc.Controller.ToString();
                                     int MIDICCRawValue = Int16.Parse(midicc.ControllerValue.ToString());
                                     int MIDICCChannel = Int16.Parse(midicc.Channel.ToString());
@@ -200,6 +195,7 @@ namespace MidiParser
                                         MIDIExp[MIDICCChannel] = MIDICCRawValue;
                                     }
                                 }
+                                //Currently no support for sustains yet
 
                                 //If Program Change (Only for Aranara MIDI)
                                 if (importMode == 7)
@@ -208,7 +204,6 @@ namespace MidiParser
                                     {
                                         PatchChangeEvent midipc = midiEvent as PatchChangeEvent;
                                         int MIDIPCRaw = ((short)midipc.Patch);
-                                        Console.WriteLine("MIDI Program Change: " + MIDIPCRaw.ToString());
 
                                         //Instrument Time
                                         double timeInSeconds = Note.ToSeconds(midipc.AbsoluteTime, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
@@ -226,11 +221,9 @@ namespace MidiParser
                                     //If not an off note
                                     if (note.Velocity != 0)
                                     {
-                                        //Adjusts volumes based on MIDI CC.
+                                        //Adjusts volumes based on MIDI CC. (Applies to all MIDI Import Modes)
                                         double noteVelCC = (MIDIVol[note.Channel]) * (MIDIExp[note.Channel]);
                                         double noteVel = note.Velocity * noteVelCC/16129;
-
-                                        
 
                                         //Gets the channel data 
                                         if (channelGet == 1 && importMode != 1 && importMode != 7) //Not needed for K9 and Aranara formats
@@ -240,7 +233,6 @@ namespace MidiParser
                                         }
 
                                         //Calculates length and start times
-
                                         double timeInSeconds = Note.ToSeconds(note.AbsoluteTime, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
                                         double lengthInSeconds = Note.ToSeconds(note.NoteLength, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
 
@@ -261,9 +253,8 @@ namespace MidiParser
                                     TempoEvent tempo = midiEvent as TempoEvent;
                                     double timeInSeconds = Note.ToSeconds(tempo.AbsoluteTime, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
                                     double lengthInSeconds = Note.ToSeconds(0, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
-                                    //Add tempo event, since the MIDI standard allows 0 to 127 pitch values, 128 to 255 can be used as control macros.
-                                    //Tempo event is "note" 128, all tempo events have length of 0 but channel value of the tempo. Still can be optimised
-                                    if (importMode != 7)
+                                    //Add Tempo Event
+                                    if (importMode != 1 && importMode != 7) //K9 format does not support tempo changes; MK9 uses note number 128
                                     {
                                         notes.Add(new Note(128, timeInSeconds, lengthInSeconds, Convert.ToInt32(60000000/tempo.Tempo), exportTPQN));
                                     }
@@ -305,7 +296,6 @@ namespace MidiParser
                         foreach (Note n in sortedNotes)
                         {
                             //Every 4 items contains all the info for a note
-                            //Is it possible to split?
                             switch(importMode){
                                 case 1: //K9ShyGuy's MIDI Player
                                     info.Append(n.TimeStart.ToString()).Append(separateChar);
@@ -339,7 +329,7 @@ namespace MidiParser
                         
                         //Below is debug only.
                         Console.WriteLine("Finished process.\nIf this window does not close automatically, press enter to end.");
-                        //Console.ReadLine();
+                        //Console.ReadLine(); //Leaving this here for the option to have the window not close automatically.
                         return info.ToString();
                     }
                     else
@@ -368,7 +358,7 @@ namespace MidiParser
                         
                         //Below is debug only.
                         Console.WriteLine("Finished process.\nIf this window does not close automatically, press enter to end.");
-                        //Console.ReadLine();
+                        //Console.ReadLine(); //Leaving this here for the option to have the window not close automatically.
                         return info.ToString();
                     }
                     
