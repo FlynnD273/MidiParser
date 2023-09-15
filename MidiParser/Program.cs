@@ -16,19 +16,21 @@ namespace MidiParser
         {
         
             //Credits
-            Console.WriteLine("MIDIParser by K9ShyGuy - Modified by Eden/Danify/OjasnGamer101\nRevision 5 - 27 August 2022\n\nType the number corresponding to an Import Option then press Enter to initialize conversion.\n\n\t[1] - K9ShyGuy's MIDI Player\n\t[2] - Danify's Scratch PFA\n\n");
+            Console.WriteLine("MIDIParser by K9ShyGuy - Modified by Eden/Danify/OjasnGamer101\nRevision 5 - 27 August 2022\n\nType the number corresponding to an Import Option then press Enter to initialize conversion.\n\n\t[1] - K9ShyGuy's MIDI Player\n\t[2] - Danify's MIDI Players\n\t[3] - Danify's MIDI Players [HEX] (BETA)\n\t[4] - Aranara MIDI (BETA)\n\n");
             double importMode = Convert.ToDouble(Console.ReadLine());
-            if (importMode % 1 !=0 || Math.Ceiling(importMode/2) != 1)
+            if (importMode % 1 !=0 || Math.Ceiling(importMode/4) != 1)
             {
                 Console.WriteLine($"\nInvalid input.\n\nPress enter to quit.");
                 Console.ReadLine();
                 return;
             }
-                
+            
+            //Pending Code Rewrite
+            
             importMode -= 1;
             importMode *= 2;
             importMode += 1;
-    
+            
             //Iterate through all files dropped onto the program
             try
             {
@@ -78,15 +80,23 @@ namespace MidiParser
             if (File.Exists(file))
             {
                 string path = file;
-                string output;
-                if (importMode == 3)
-                {
-                    output = Path.Combine(Path.GetDirectoryName(path), "_" + Path.GetFileNameWithoutExtension(path) + " - Converted.spfa");
+                string output = "";
+
+                switch(importMode){
+                    case 1:
+                        output = Path.Combine(Path.GetDirectoryName(path), "_" + Path.GetFileNameWithoutExtension(path) + " - Converted.txt");
+                        break;
+                    case 3:
+                        output = Path.Combine(Path.GetDirectoryName(path), "_" + Path.GetFileNameWithoutExtension(path) + " - Converted.spfa");
+                        break;
+                    case 5:
+                        output = Path.Combine(Path.GetDirectoryName(path), "_" + Path.GetFileNameWithoutExtension(path) + " - Converted.shmd");
+                        break;
+                    case 7:
+                        output = Path.Combine(Path.GetDirectoryName(path), "!" + Path.GetFileNameWithoutExtension(path) + ".aramidi");
+                        break;
                 }
-                else
-                {
-                    output = Path.Combine(Path.GetDirectoryName(path), "_" + Path.GetFileNameWithoutExtension(path) + " - Converted.txt");
-                }
+
                 MidiFile mid;
 
                 //If an error is thrown, notify user and continue looping
@@ -94,12 +104,12 @@ namespace MidiParser
                 {
                     mid = new MidiFile(path);
                     int ticksPerQuarterNote = mid.DeltaTicksPerQuarterNote;
-                    int exportTPQN = 1;
-                    int channelGet = 0;
-                    if (importMode == 3)
+                    int exportTPQN = Convert.ToInt32(importMode==1) + Convert.ToInt32(importMode!=1) * 384;
+                    if (importMode == 7)
                     {
-                        exportTPQN *= 384;
+                        exportTPQN = 768;
                     }
+                    int channelGet = 0;
 
                     List<TempoEvent> tempoEvents = new List<TempoEvent>();
                     tempoEvents.Add(new TempoEvent(500000, 0));
@@ -111,8 +121,10 @@ namespace MidiParser
                         midiEvents[i] = mid.Events.ElementAt(i).ToArray();
                     }
 
-                    List<Note> notes = new List<Note>();
-
+                    
+                    List<Note> notes = new List<Note>(); //somehow nesting this in an if-else statement breaks everything
+                    List<AranaraN>aran = new List<AranaraN>();
+                   
                     foreach (MidiEvent m in midiEvents[0])
                     {
                         try
@@ -130,25 +142,28 @@ namespace MidiParser
                     }
 
                     //Create a list containing default Expression, Volume, and Sustain values. 18 Entries in case.
-                    int[] MIDIVol = new int[] {127,127,127,127,127,127,127,127,127,127,127,127,127,127,127,127,127,127};
-                    int[] MIDIExp = new int[] {127,127,127,127,127,127,127,127,127,127,127,127,127,127,127,127,127,127};
-                    int[] MIDISus = new int[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+                    int[] MIDIVol = Enumerable.Repeat(127, 18).ToArray();
+                    int[] MIDIExp = Enumerable.Repeat(127, 18).ToArray();
+                    int[] MIDISus = Enumerable.Repeat(0, 18).ToArray(); //Unused
 
                     //Iterate through every note press in the file
                     for (int i = 0; i < midiEvents.Length; i++)
                     {
-                        //Skip drums - This should be skipping channels, not tracks
-                        //if (i == 9)
-                        //{
-                        //    continue;
-                        //}
                         
                         //Track Header - Separates notes into its own separate tracks
-                        
-                        if (importMode >= 2)
+                        if (importMode != 1)
                         {
-                            notes.Add(new Note(i, -1, 0, 0, exportTPQN));
+                            if (importMode == 7)
+                            {
+                                aran.Add(new AranaraN("TR",0,0,0,0,i,exportTPQN));
+                            }
+                            else
+                            {
+                                notes.Add(new Note(i, -1, 0, 0, exportTPQN));
+                            }
                         }
+                        
+                        
                         int currentTempoIndex = 0;
                         channelGet = 1;
 
@@ -166,34 +181,37 @@ namespace MidiParser
                                     }
                                 }
 
-                                //If Control Change - WIP (Not yet implemented)
-                                
+                                //If Control Change (Purpose is to change velocity depending on channel volume and expression)
                                 if (midiEvent.CommandCode == MidiCommandCode.ControlChange)
                                 {
                                     ControlChangeEvent midicc = midiEvent as ControlChangeEvent;
-                                    //Console.WriteLine("Controller: "+ midicc.Controller + "\nValue: "+ midicc.ControllerValue);
                                     string MIDICCRaw = midicc.Controller.ToString();
                                     int MIDICCRawValue = Int16.Parse(midicc.ControllerValue.ToString());
                                     int MIDICCChannel = Int16.Parse(midicc.Channel.ToString());
                                     if (MIDICCRaw == "MainVolume"){
-                                        Console.WriteLine("Channel:" + (MIDICCChannel).ToString() + "\nValue of Volume:" + (MIDICCRawValue).ToString());
                                         MIDIVol[MIDICCChannel] = MIDICCRawValue;
-                                        Console.WriteLine("MIDIVol[MIDICCChannel]: " + MIDIVol[MIDICCChannel]);
                                     }
                                     if (MIDICCRaw == "Expression"){
-                                        Console.WriteLine("Channel:" + (MIDICCChannel).ToString() + "\nValue of Expression:" + (MIDICCRawValue).ToString());
                                         MIDIExp[MIDICCChannel] = MIDICCRawValue;
-                                        Console.WriteLine("MIDIExp[MIDICCChannel]: " + MIDIExp[MIDICCChannel]);
                                     }
-                                    
-                                    
-
-                                    //double volexp = 127;
-                                    
                                 }
-                                
-                                
-                                
+                                //Currently no support for sustains yet
+
+                                //If Program Change (Only for Aranara MIDI)
+                                if (importMode == 7)
+                                {
+                                    if (midiEvent.CommandCode == MidiCommandCode.PatchChange)
+                                    {
+                                        PatchChangeEvent midipc = midiEvent as PatchChangeEvent;
+                                        int MIDIPCRaw = ((short)midipc.Patch);
+
+                                        //Instrument Time
+                                        double timeInSeconds = Note.ToSeconds(midipc.AbsoluteTime, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
+                                        double lengthInSeconds = Note.ToSeconds(0, tempoEvents[currentTempoIndex], ticksPerQuarterNote); //Not quite needed
+
+                                        aran.Add(new AranaraN("PC",MIDIPCRaw,0,midipc.Channel,timeInSeconds,0,exportTPQN));
+                                    }
+                                }
 
                                 //Only if a note press
                                 if (midiEvent.CommandCode == MidiCommandCode.NoteOn)
@@ -203,25 +221,31 @@ namespace MidiParser
                                     //If not an off note
                                     if (note.Velocity != 0)
                                     {
-                                        //Adjusts volumes based on MIDI CC.
+                                        //Adjusts volumes based on MIDI CC. (Applies to all MIDI Import Modes)
                                         double noteVelCC = (MIDIVol[note.Channel]) * (MIDIExp[note.Channel]);
-                                        //Console.WriteLine("MIDIVol[note.Channel-1]: " + (MIDIVol[note.Channel-1]).ToString());
-                                        //Console.WriteLine("MIDIExp[note.Channel-1]: " + (MIDIExp[note.Channel-1]).ToString());
                                         double noteVel = note.Velocity * noteVelCC/16129;
-                                        //Console.WriteLine("Note Channel: " + note.Channel.ToString() + "\nNote Velocity: " + noteVel);
-
-                                        
 
                                         //Gets the channel data 
-                                        if (channelGet == 1)
+                                        if (channelGet == 1 && importMode != 1 && importMode != 7) //Not needed for K9 and Aranara formats
                                         {
                                             notes.Add(new Note(note.Channel, -1, 1, 0, exportTPQN));
                                             channelGet = 0;
                                         }
+
+                                        //Calculates length and start times
                                         double timeInSeconds = Note.ToSeconds(note.AbsoluteTime, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
                                         double lengthInSeconds = Note.ToSeconds(note.NoteLength, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
+
                                         //Add this note
-                                        notes.Add(new Note(note.NoteNumber, timeInSeconds, lengthInSeconds, noteVel, exportTPQN));
+                                        if (importMode != 7)
+                                        {
+                                            notes.Add(new Note(note.NoteNumber, timeInSeconds, lengthInSeconds, noteVel, exportTPQN));
+                                        }
+                                        else
+                                        {
+                                            aran.Add(new AranaraN("N",note.NoteNumber,Convert.ToInt32(noteVel),note.Channel,timeInSeconds,lengthInSeconds,exportTPQN));
+                                        }
+
                                     }
                                 }
                                 //If there is a tempo event
@@ -229,9 +253,15 @@ namespace MidiParser
                                     TempoEvent tempo = midiEvent as TempoEvent;
                                     double timeInSeconds = Note.ToSeconds(tempo.AbsoluteTime, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
                                     double lengthInSeconds = Note.ToSeconds(0, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
-                                    //Add tempo event, since the MIDI standard allows 0 to 127 pitch values, 128 to 255 can be used as control macros.
-                                    //Tempo event is "note" 128, all tempo events have length of 0 but channel value of the tempo. Still can be optimised
-                                    notes.Add(new Note(128, timeInSeconds, lengthInSeconds, Convert.ToInt32(60000000/tempo.Tempo), exportTPQN));
+                                    //Add Tempo Event
+                                    if (importMode != 1 && importMode != 7) //K9 format does not support tempo changes; MK9 uses note number 128
+                                    {
+                                        notes.Add(new Note(128, timeInSeconds, lengthInSeconds, Convert.ToInt32(60000000/tempo.Tempo), exportTPQN));
+                                    }
+                                    else
+                                    {
+                                        aran.Add(new AranaraN("TE",0,0,0,timeInSeconds,60000000/tempo.Tempo,exportTPQN));
+                                    }
                                 }
                             }
                             catch (Exception e)
@@ -241,46 +271,97 @@ namespace MidiParser
                         }
                     }
 
-                    //Sort by time in ascending order - Not needed for track header separation (MK9S 4+)
-                    //WARNING: Disabling sortedNotes will render this program unusable to the original MIDI Player of K9ShyGuy
-                    Note[] sortedNotes;
-                    if (importMode == 1)
+                    
+                    // Parsing Data
+                    
+                    if(importMode != 7)
                     {
-                        sortedNotes = notes.OrderBy(o => o.TimeStart).ToArray();
-                    } 
-                    else 
+                        //Sort by time in ascending order - Not needed for track header separation (MK9S 4+)
+                        //WARNING: Disabling sortedNotes will render this program unusable to the original MIDI Player of K9ShyGuy
+                        Note[] sortedNotes;
+                        if (importMode == 1)
+                        {
+                            sortedNotes = notes.OrderBy(o => o.TimeStart).ToArray();
+                        } 
+                        else 
+                        {
+                            sortedNotes = notes.ToArray();
+                        }
+                        
+                        char separateChar = '\\';
+                        //String to write to the text file
+                        //Start with the file name without commas as the song title
+                        StringBuilder info = new StringBuilder($"{Path.GetFileNameWithoutExtension(path).Replace(separateChar.ToString(), "")}{separateChar}{importMode}{separateChar}");
+                        
+                        foreach (Note n in sortedNotes)
+                        {
+                            //Every 4 items contains all the info for a note
+                            switch(importMode){
+                                case 1: //K9ShyGuy's MIDI Player
+                                    info.Append(n.TimeStart.ToString()).Append(separateChar);
+                                    info.Append(n.NotePitch.ToString()).Append(separateChar);
+                                    info.Append(n.Length.ToString()).Append(separateChar);
+                                    info.Append(n.Velocity.ToString()).Append(separateChar);
+                                    break;
+                                case 3: //Danify's MIDI Player
+                                    info.Append(n.TimeStart.ToString()).Append(separateChar);
+                                    info.Append(n.NotePitch.ToString()).Append(separateChar);
+                                    info.Append(n.Length.ToString()).Append(separateChar);
+                                    info.Append(n.Velocity.ToString()).Append(separateChar);
+                                    break;
+                                case 5: //Experimental (HEX)
+                                    info.Append(Convert.ToInt32(n.TimeStart).ToString("X")).Append(separateChar);
+                                    info.Append(n.NotePitch.ToString("X")).Append(separateChar);
+                                    info.Append(Convert.ToInt32(n.Length).ToString("X")).Append(separateChar);
+                                    info.Append(Convert.ToInt32(n.Velocity).ToString("X")).Append(separateChar);
+                                    break;
+                            }
+                        }
+
+                        //Remove end comma
+                        info.Remove(info.Length - 1, 1);
+
+                        //Write to a text file
+                        File.WriteAllText(output, info.ToString());
+
+                        //Console.WriteLine("\n\n****************\n\n" + info.ToString());
+                        //Clipboard.SetText(info.ToString());
+                        
+                        //Below is debug only.
+                        Console.WriteLine("Finished process.\nIf this window does not close automatically, press enter to end.");
+                        //Console.ReadLine(); //Leaving this here for the option to have the window not close automatically.
+                        return info.ToString();
+                    }
+                    else
                     {
-                        sortedNotes = notes.ToArray();
+                        //Aranara MIDI File Parser
+                        AranaraN[] events = aran.ToArray();
+
+                        char separateChar = '|'; //Only used for initialising file header.
+                        StringBuilder info = new StringBuilder($"{Path.GetFileNameWithoutExtension(path).Replace(separateChar.ToString(), "")}{separateChar}");
+
+                        foreach (AranaraN n in events)
+                        {
+                            info.Append(n.hex_type);
+                            info.Append(n.hex_note);
+                            info.Append(n.hex_vel);
+                            info.Append(n.hex_ch);
+                            info.Append(n.hex_value);
+                            info.Append(n.hex_time);
+                            info.Append(n.hex_len);
+                        }
+                        //Write to a text file
+                        File.WriteAllText(output, info.ToString());
+
+                        //Console.WriteLine("\n\n****************\n\n" + info.ToString());
+                        //Clipboard.SetText(info.ToString());
+                        
+                        //Below is debug only.
+                        Console.WriteLine("Finished process.\nIf this window does not close automatically, press enter to end.");
+                        //Console.ReadLine(); //Leaving this here for the option to have the window not close automatically.
+                        return info.ToString();
                     }
                     
-                    char separateChar = '\\';
-                    //String to write to the text file
-                    //Start with the file name without commas as the song title
-                    StringBuilder info = new StringBuilder($"{Path.GetFileNameWithoutExtension(path).Replace(separateChar.ToString(), "")}{separateChar}{importMode}{separateChar}");
-                    
-                    foreach (Note n in sortedNotes)
-                    {
-                        //Every 4 items contains all the info for a note
-                        //Is it possible to split?
-                        info.Append(n.TimeStart.ToString()).Append(separateChar);
-                        info.Append(n.NotePitch.ToString()).Append(separateChar);
-                        info.Append(n.Length.ToString()).Append(separateChar);
-                        info.Append(n.Velocity.ToString()).Append(separateChar);
-                    }
-
-                    //Remove end comma
-                    info.Remove(info.Length - 1, 1);
-
-                    //Write to a text file
-                    File.WriteAllText(output, info.ToString());
-
-                    //Console.WriteLine("\n\n****************\n\n" + info.ToString());
-                    //Clipboard.SetText(info.ToString());
-                    
-                    //Below is debug only.
-                    Console.WriteLine("Finished process.\nIf this window does not close automatically, press enter to end.");
-                    //Console.ReadLine();
-                    return info.ToString();
                 }
                 catch (Exception e)
                 {
