@@ -66,5 +66,10 @@ namespace MidiParser
                     break;
             }
         }
+
+        public static double ToSeconds (long time, TempoEvent lastTempoEvent, int ticksPerQuarterNote)
+        {
+            return (double)(((double)(time - lastTempoEvent.AbsoluteTime) / ticksPerQuarterNote) * lastTempoEvent.MicrosecondsPerQuarterNote + lastTempoEvent.AbsoluteTime) / 1000000;
+        }
     }
 }

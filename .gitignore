@@ -10,6 +10,13 @@
 *.userosscache
 *.sln.docstates
 
+# Backups
+*.csbak
+*.bak
+
+# WIP cs (Not ready for build)
+*.cswip
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
@@ -165,7 +172,7 @@ DocProject/Help/Html2
 DocProject/Help/html
 
 # Click-Once directory
-publish/
+# publish/
 
 # Publish Web Output
 *.[Pp]ublish.xml
