@@ -1,8 +1,10 @@
 ﻿using NAudio.Midi;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 //using System.Windows.Forms;
 using System.Threading;
@@ -34,9 +36,14 @@ namespace MidiParser
                         }
                         break;
                     default:
+                        Console.WriteLine("Batch Convert function is partially supported.");
+                        //Console.ReadLine();
                         ConvertAllFiles(args);
                         break;
                 }
+                //Post Operation.
+                Console.WriteLine("Finished process.\nIf this window does not close automatically, press enter to end.");
+                //Console.ReadLine(); //Leaving this here for the option to have the window not close automatically.
             }
             catch (Exception e)
             {
@@ -45,16 +52,15 @@ namespace MidiParser
             }
         }
 
+        //An Attempt to make Batch Conversion Possible
         private static void ConvertAllFiles (string[] files)
         {
-            StringBuilder sb = new StringBuilder();
+            int count = 1;
             foreach (string file in files)
             {
-                sb.AppendLine(ConvertFile(file));
+                ConvertFile(file);
+                Console.WriteLine($"Finished file {count++}");
             }
-            sb.Remove(sb.Length - 1, 1);
-
-            File.WriteAllText(Path.Combine(Path.GetDirectoryName(files[0]), "__AllSongs.txt"), sb.ToString());
         }
 
         private static string ConvertFile (string file)
@@ -63,7 +69,7 @@ namespace MidiParser
             if (File.Exists(file))
             {
                 string path = file;
-                string output = Path.Combine(Path.GetDirectoryName(path), "_" + Path.GetFileNameWithoutExtension(path) + " - Converted.txt");
+                string output = Path.Combine(Path.GetDirectoryName(path), "!" + Path.GetFileNameWithoutExtension(path) + ".aramidi");
                 MidiFile mid;
 
                 //If an error is thrown, notify user and continue looping
@@ -71,9 +77,12 @@ namespace MidiParser
                 {
                     mid = new MidiFile(path);
                     int ticksPerQuarterNote = mid.DeltaTicksPerQuarterNote;
-
+                    //Insert logic to confirm whether to use 768 ppqb or Import MIDI TPQ
+                    int prctmp = 120; //Formula using 120 BPM: tpq * 4 * (prctmp/60)
+                    int outTPQ = 96 * 4 * (prctmp/60);
+                    
                     List<TempoEvent> tempoEvents = new List<TempoEvent>();
-                    tempoEvents.Add(new TempoEvent(500000, 0));
+                    tempoEvents.Add(new TempoEvent(60000000/prctmp, 0)); //Assumes Tempo is 120 BPM, converts to seconds at 120 BPM
 
                     MidiEvent[][] midiEvents = new MidiEvent[mid.Events.Count()][];
 
@@ -82,7 +91,7 @@ namespace MidiParser
                         midiEvents[i] = mid.Events.ElementAt(i).ToArray();
                     }
 
-                    List<Note> notes = new List<Note>();
+                    List<AranaraN> notes = new List<AranaraN>();
 
                     foreach (MidiEvent m in midiEvents[0])
                     {
@@ -100,14 +109,15 @@ namespace MidiParser
                         }
                     }
 
+                    //Create a list containing default Expression, Volume, and Sustain values. 18 Entries in case.
+                    int[] MIDIVol = Enumerable.Repeat(127, 18).ToArray();
+                    int[] MIDIExp = Enumerable.Repeat(127, 18).ToArray();
+
                     //Iterate through every note press in the file
                     for (int i = 0; i < midiEvents.Length; i++)
                     {
-                        //Skip drums
-                        if (i == 9)
-                        {
-                            continue;
-                        }
+                        //Track Header
+                        notes.Add(new AranaraN("TR",0,0,0,0,i,outTPQ));
 
                         int currentTempoIndex = 0;
 
@@ -126,19 +136,62 @@ namespace MidiParser
                                     }
                                 }
 
-                                //Only if a note press
-                                if (midiEvent.CommandCode == MidiCommandCode.NoteOn)
+                                //Test: Switch Cases
+                                double timeInSeconds;
+                                double lengthInSeconds;
+                                switch(midiEvent.CommandCode)
                                 {
-                                    NoteOnEvent note = midiEvent as NoteOnEvent;
+                                    case MidiCommandCode.ControlChange:
+                                        ControlChangeEvent midicc = midiEvent as ControlChangeEvent;
+                                        int MIDICCRawValue = short.Parse(midicc.ControllerValue.ToString());
+                                        int MIDICCChannel = short.Parse(midicc.Channel.ToString());
+                                        switch(midicc.Controller.ToString())
+                                        {
+                                            case "MainVolume":
+                                                MIDIVol[MIDICCChannel] = MIDICCRawValue;
+                                            break;
+                                            case "Expression":
+                                                MIDIExp[MIDICCChannel] = MIDICCRawValue;
+                                            break;
+                                            default:
+                                            break;
+                                        }
+                                    break;
+                                    case MidiCommandCode.PatchChange:
+                                        PatchChangeEvent midipc = midiEvent as PatchChangeEvent;
+                                        int MIDIPCRaw = ((short)midipc.Patch);
 
-                                    //If not an off note
-                                    if (note.Velocity != 0)
-                                    {
-                                        double timeInSeconds = Note.ToSeconds(note.AbsoluteTime, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
-                                        double lengthInSeconds = Note.ToSeconds(note.NoteLength, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
-                                        //Add this note
-                                        notes.Add(new Note(note.NoteNumber, timeInSeconds, lengthInSeconds, note.Velocity));
-                                    }
+                                        
+                                        timeInSeconds = AranaraN.ToSeconds(midipc.AbsoluteTime, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
+                                        lengthInSeconds = AranaraN.ToSeconds(0, tempoEvents[currentTempoIndex], ticksPerQuarterNote); //Not quite needed
+                                        
+                                        //Add this instrument change
+                                        notes.Add(new AranaraN("PC",MIDIPCRaw,0,midipc.Channel,timeInSeconds,0,outTPQ));
+                                    break;
+                                    case MidiCommandCode.NoteOn:
+                                        NoteOnEvent note = midiEvent as NoteOnEvent;
+
+                                        //If not an off note
+                                        if (note.Velocity != 0)
+                                        {
+                                            timeInSeconds = AranaraN.ToSeconds(note.AbsoluteTime, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
+                                            lengthInSeconds = AranaraN.ToSeconds(note.NoteLength, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
+
+                                            //Add this note
+                                            notes.Add(new AranaraN("N",note.NoteNumber,Convert.ToInt32(note.Velocity * (MIDIVol[note.Channel] * MIDIExp[note.Channel]) / 16129),note.Channel,timeInSeconds,lengthInSeconds,outTPQ));
+                                        }
+                                    break;
+                                    default:
+                                        //Tempo Event Detection
+                                        if (midiEvent is TempoEvent)
+                                        {
+                                            TempoEvent tempo = midiEvent as TempoEvent;
+                                            timeInSeconds = AranaraN.ToSeconds(tempo.AbsoluteTime, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
+                                            lengthInSeconds = AranaraN.ToSeconds(0, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
+                                            //Add Tempo Event
+                                            notes.Add(new AranaraN("TE",0,0,0,timeInSeconds,60000000/tempo.Tempo,outTPQ));
+                                        }
+                                    break;
                                 }
                             }
                             catch (Exception e)
@@ -148,31 +201,28 @@ namespace MidiParser
                         }
                     }
 
-                    //Sort by time in ascending order
-                    Note[] sortedNotes = notes.OrderBy(o => o.TimeStart).ToArray();
+                    //Aranara MIDI File Parser
+                    AranaraN[] events = notes.ToArray();
 
-                    char separateChar = '\\';
-                    //String to write to the text file
-                    //Start with the file name without commas as the song title
-                    StringBuilder info = new StringBuilder($"{Path.GetFileNameWithoutExtension(path).Replace(separateChar.ToString(), "")}{separateChar}1{separateChar}");
+                    char separateChar = '|'; //Only used for initialising file header.
+                    //string header = ;
+                    StringBuilder info = new StringBuilder($"{(Path.GetFileNameWithoutExtension(path) + $"{":"}{outTPQ}").Replace(separateChar.ToString(), "")}{separateChar}");
+                    
 
-                    foreach (Note n in sortedNotes)
+                    foreach (AranaraN n in events)
                     {
-                        //Every 4 items contains all the info for a note
-                        info.Append(n.TimeStart.ToString()).Append(separateChar);
-                        info.Append(n.NotePitch.ToString()).Append(separateChar);
-                        info.Append(n.Length.ToString()).Append(separateChar);
-                        info.Append(n.Velocity.ToString()).Append(separateChar);
+                        info.Append(n.hex_type);
+                        info.Append(n.hex_note);
+                        info.Append(n.hex_vel);
+                        info.Append(n.hex_ch);
+                        info.Append(n.hex_value);
+                        info.Append(n.hex_time);
+                        info.Append(n.hex_len);
                     }
-
-                    //Remove end comma
-                    info.Remove(info.Length - 1, 1);
-
                     //Write to a text file
                     File.WriteAllText(output, info.ToString());
-
-                    //Console.WriteLine("\n\n****************\n\n" + info.ToString());
-                    //Clipboard.SetText(info.ToString());
+                    
+                    
                     return info.ToString();
                 }
                 catch (Exception e)
