@@ -22,6 +22,8 @@
 
 # Build results
 [Dd]ebug/
+Debug/netcoreapp3.1/
+*.dev.json
 #[Dd]ebugPublic/
 #[Rr]elease/
 [Rr]eleases/
@@ -33,6 +35,9 @@ x86/
 #[Bb]in/
 [Oo]bj/
 [Ll]og/
+
+# Shortcuts
+*.lnk
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/

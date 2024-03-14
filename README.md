@@ -8,7 +8,7 @@ This modded variant is intended for usage for the following Scratch projects:
 This program has been modded to allow tempo events to be included in the file. This will make the code incompatible with the original Scratch project made by K9ShyGuy. This converter is only usable for Aranara MIDI Player or MIDI Players using Aranara MIDI Format.
 
 ## How to use
-The compiled executable can be found [here](../Aranara/MidiParser/bin/Release/netcoreapp3.1/publish):
+The compiled executable can be found [here](../MidiParser/bin/Release/netcoreapp3.1/publish):
 
 There's a green button in the upper left area of the page. Click on that, then click "Download ZIP" Extract the zip file, then go to MidiParser >> bin >> Debug >> netcoreapp3.1 You can either run the exe file and paste in the MIDI file path, or you can drag MIDI files onto the exe, and convert them that way. I find the 2nd method easier.
 A text file will appear, and you want to open the text file and copy everything in that text file. 

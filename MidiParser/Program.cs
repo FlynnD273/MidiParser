@@ -110,8 +110,8 @@ namespace MidiParser
                     }
 
                     //Create a list containing default Expression, Volume, and Sustain values. 18 Entries in case.
-                    int[] MIDIVol = Enumerable.Repeat(127, 18).ToArray();
-                    int[] MIDIExp = Enumerable.Repeat(127, 18).ToArray();
+                    int[] MIDIVol = Enumerable.Repeat(127, 16).ToArray();
+                    int[] MIDIExp = Enumerable.Repeat(127, 16).ToArray();
 
                     //Iterate through every note press in the file
                     for (int i = 0; i < midiEvents.Length; i++)
@@ -144,7 +144,7 @@ namespace MidiParser
                                     case MidiCommandCode.ControlChange:
                                         ControlChangeEvent midicc = midiEvent as ControlChangeEvent;
                                         int MIDICCRawValue = short.Parse(midicc.ControllerValue.ToString());
-                                        int MIDICCChannel = short.Parse(midicc.Channel.ToString());
+                                        int MIDICCChannel = short.Parse((midicc.Channel%16).ToString());
                                         switch(midicc.Controller.ToString())
                                         {
                                             case "MainVolume":
@@ -176,9 +176,9 @@ namespace MidiParser
                                         {
                                             timeInSeconds = AranaraN.ToSeconds(note.AbsoluteTime, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
                                             lengthInSeconds = AranaraN.ToSeconds(note.NoteLength, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
-
+                                           
                                             //Add this note
-                                            notes.Add(new AranaraN("N",note.NoteNumber,Convert.ToInt32(note.Velocity * (MIDIVol[note.Channel] * MIDIExp[note.Channel]) / 16129),note.Channel,timeInSeconds,lengthInSeconds,outTPQ));
+                                            notes.Add(new AranaraN("N",note.NoteNumber,Convert.ToInt32(note.Velocity * (MIDIVol[note.Channel%16] * MIDIExp[note.Channel%16]) / 16129),note.Channel%16,timeInSeconds,lengthInSeconds,outTPQ));
                                         }
                                     break;
                                     default:
@@ -205,8 +205,8 @@ namespace MidiParser
                     AranaraN[] events = notes.ToArray();
 
                     char separateChar = '|'; //Only used for initialising file header.
-                    //string header = ;
-                    StringBuilder info = new StringBuilder($"{(Path.GetFileNameWithoutExtension(path) + $"{":"}{outTPQ}").Replace(separateChar.ToString(), "")}{separateChar}");
+                    string header = "[Aranara]█";
+                    StringBuilder info = new StringBuilder($"{header}{(Path.GetFileNameWithoutExtension(path) + $"{":"}{outTPQ}").Replace(separateChar.ToString(), "")}{separateChar}");
                     
 
                     foreach (AranaraN n in events)
@@ -221,7 +221,6 @@ namespace MidiParser
                     }
                     //Write to a text file
                     File.WriteAllText(output, info.ToString());
-                    
                     
                     return info.ToString();
                 }
