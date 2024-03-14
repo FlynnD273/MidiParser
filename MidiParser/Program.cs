@@ -166,7 +166,7 @@ namespace MidiParser
                                         lengthInSeconds = AranaraN.ToSeconds(0, tempoEvents[currentTempoIndex], ticksPerQuarterNote); //Not quite needed
                                         
                                         //Add this instrument change
-                                        notes.Add(new AranaraN("PC",MIDIPCRaw,0,midipc.Channel,timeInSeconds,0,outTPQ));
+                                        notes.Add(new AranaraN("PC",MIDIPCRaw,0,midipc.Channel%16,timeInSeconds,0,outTPQ));
                                     break;
                                     case MidiCommandCode.NoteOn:
                                         NoteOnEvent note = midiEvent as NoteOnEvent;
