@@ -9,14 +9,26 @@
 *.user
 *.userosscache
 *.sln.docstates
+.rmv/
+MidiParser/bin/Debug
+MidiParser/bin/Old
+
+# Backups
+*.csbak
+*.bak
+
+# WIP cs (Not ready for build)
+*.cswip
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
 # Build results
-#[Dd]ebug/
+[Dd]ebug/
+Debug/netcoreapp3.1/
+*.dev.json
 #[Dd]ebugPublic/
-[Rr]elease/
+#[Rr]elease/
 [Rr]eleases/
 x64/
 x86/
@@ -26,6 +38,9 @@ x86/
 #[Bb]in/
 [Oo]bj/
 [Ll]og/
+
+# Shortcuts
+#*.lnk
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
@@ -165,7 +180,7 @@ DocProject/Help/Html2
 DocProject/Help/html
 
 # Click-Once directory
-publish/
+# publish/
 
 # Publish Web Output
 *.[Pp]ublish.xml
