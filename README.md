@@ -1,3 +1,5 @@
+# ⚠️ This repository has migrated to [Codeberg](https://codeberg.org/FlynnD273/midi-parser)
+
 # MidiParser
 A program to convert MIDI files into a text file to copy into this Scratch project: https://scratch.mit.edu/projects/406337184/
 
